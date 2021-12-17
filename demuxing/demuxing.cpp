@@ -29,7 +29,7 @@
   * @example demuxing_decoding.c
   */
 
-//  ffplay -f rawvideo -pix_fmt yuv420p -video_size 1920x1080 video
+//  ffplay -f rawvideo -pix_fmt yuv420p -video_size 640x480 video
 //  ffplay -f f32le -ac 1 -ar 44100 audio
 
 extern "C" {
