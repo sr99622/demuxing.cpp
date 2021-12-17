@@ -12,9 +12,8 @@ public:
 	int open_audio_context();
 	AVPacket* read_packet();
 
-	const char* src_filename = "news.mp4";
+	const char* src_filename;
 	AVFormatContext* fmt_ctx;
-	//AVPacket* pkt = NULL;
 	AVCodecContext* video_dec_ctx = NULL;
 	AVCodecContext* audio_dec_ctx = NULL;
 	AVStream* video_stream = NULL;
