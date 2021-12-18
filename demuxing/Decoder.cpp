@@ -1,28 +1,32 @@
 #include "Decoder.h"
 
-Decoder::Decoder(AVCodecContext* dec)
+Decoder::Decoder(AVFormatContext* fmt_ctx, int stream_index)
 {
-	dec_ctx = dec;
     next_pts = 0;
     next_pts_tb = av_make_q(0, 1);
 
-	try {
-		av.ck(frame = av_frame_alloc(), CmdTag::AFA);
-        writer = new RawFileWriter(dec);
-	}
-	catch (const AVException& e) {
-		std::cout << "Decoder constructor exception: " << e.what() << std::endl;
-	}
+    try {
+        AVStream* stream = fmt_ctx->streams[stream_index];
+        const AVCodec* dec = NULL;
+        av.ck(dec = avcodec_find_decoder(stream->codecpar->codec_id), std::string("avcodec_find_decoder could not find ") + avcodec_get_name(stream->codecpar->codec_id));
+        av.ck(dec_ctx = avcodec_alloc_context3(dec), CmdTag::AAC3);
+        av.ck(avcodec_parameters_to_context(dec_ctx, stream->codecpar), CmdTag::APTC);
+        av.ck(avcodec_open2(dec_ctx, dec, NULL), CmdTag::AO2);
+        writer = new RawFileWriter(dec_ctx);
+    }
+    catch (const AVException& e) {
+        std::cout << "Decoder constructor exception: " << e.what() << std::endl;
+    }
 }
 
 Decoder::~Decoder()
 {
     if (writer != nullptr)
         delete writer;
-    av_frame_free(&frame);
+    avcodec_free_context(&dec_ctx);
 }
 
-int Decoder::decode_packet(AVPacket* pkt) 
+AVFrame* Decoder::decode_packet(AVPacket* pkt) 
 {
     int ret = 0;
 
@@ -30,27 +34,28 @@ int Decoder::decode_packet(AVPacket* pkt)
         av.ck(ret = avcodec_send_packet(dec_ctx, pkt), CmdTag::ASP);
 
         while (ret >= 0) {
+            AVFrame* frame = NULL;
+            av.ck(frame = av_frame_alloc(), CmdTag::AFA);
             ret = avcodec_receive_frame(dec_ctx, frame);
             if (ret < 0) {
-                if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN))
-                    return 0;
-                else
-                    throw "error during decoding";
+                if (ret == AVERROR_EOF || ret == AVERROR(EAGAIN)) {
+                    return NULL;
+                }
+                else {
+                    av.ck(ret, "error during decoding");
+                }
             }
             else {
                 adjust_pts(frame);
             }
-
-            writer->write_frame(frame);
-
-            av_frame_unref(frame);
+            return frame;
         }
     }
     catch (const AVException& e) {
         std::cout << "Decoder::decode_packet exception: " << e.what() << std::endl;
     }
 
-    return ret;
+    return NULL;
 }
 
 void Decoder::adjust_pts(AVFrame* frame)

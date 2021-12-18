@@ -54,6 +54,33 @@ void AVExceptionHandler::ck(int ret, std::string msg)
     }
 }
 
+void AVExceptionHandler::ck(void* arg, CmdTag cmd_tag)
+{
+    if (arg == NULL) throw getNullException(cmd_tag);
+}
+
+void AVExceptionHandler::ck(void* arg, const std::string& msg)
+{
+    if (arg == NULL) {
+        AVException e(msg);
+        throw e;
+    }
+}
+
+void AVExceptionHandler::ck(const void* arg, CmdTag cmd_tag)
+{
+    if (arg == NULL) throw getNullException(cmd_tag);
+}
+
+void AVExceptionHandler::ck(const void* arg, const std::string& msg)
+{
+    if (arg == NULL) {
+        AVException e(msg);
+        throw e;
+    }
+}
+
+/*
 void AVExceptionHandler::ck(AVFrame* arg, CmdTag cmd_tag)
 {
     if (arg == NULL) throw getNullException(cmd_tag);
@@ -144,6 +171,7 @@ void AVExceptionHandler::ck(AVStream* arg, const std::string& msg)
         throw e;
     }
 }
+*/
 
 const AVException AVExceptionHandler::getNullException(CmdTag cmd_tag)
 {

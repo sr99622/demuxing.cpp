@@ -49,10 +49,10 @@ static const char* src_filename = NULL;
 void read(FileReader* reader, CircularQueue<AVPacket*>* video_pkt_q, CircularQueue<AVPacket*>* audio_pkt_q)
 {
     while (AVPacket* pkt = reader->read_packet()) {
-        if (pkt->stream_index == reader->video_stream_idx) {
+        if (pkt->stream_index == reader->video_stream_index) {
             video_pkt_q->push(pkt);
         }
-        else if (pkt->stream_index == reader->audio_stream_idx) {
+        else if (pkt->stream_index == reader->audio_stream_index) {
             audio_pkt_q->push(pkt);
         }
     }
@@ -63,16 +63,20 @@ void read(FileReader* reader, CircularQueue<AVPacket*>* video_pkt_q, CircularQue
 
 void decode_video(Decoder* video_decoder, CircularQueue<AVPacket*>* video_pkt_q)
 {
-    int ret = 0;
-    while (ret >= 0) {
+    bool decoding = true;
+    while (decoding) {
         try {
             AVPacket* pkt = video_pkt_q->pop();
-            ret = video_decoder->decode_packet(pkt);
+            AVFrame* frame = video_decoder->decode_packet(pkt);
+            if (frame) {
+                video_decoder->writer->write_frame(frame);
+                av_frame_free(&frame);
+            }
             av_packet_unref(pkt);
         }
         catch (const QueueClosedException& e) {
             std::cout << "decode_video exception: " << e.what() << std::endl;
-            ret = -1;
+            decoding = false;
         }
     }
     video_decoder->flush();
@@ -80,16 +84,20 @@ void decode_video(Decoder* video_decoder, CircularQueue<AVPacket*>* video_pkt_q)
 
 void decode_audio(Decoder* audio_decoder, CircularQueue<AVPacket*>* audio_pkt_q)
 {
-    int ret = 0;
-    while (ret >= 0) {
+    bool decoding = true;
+    while (decoding) {
         try {
             AVPacket* pkt = audio_pkt_q->pop();
-            ret = audio_decoder->decode_packet(pkt);
+            AVFrame* frame = audio_decoder->decode_packet(pkt);
+            if (frame) {
+                audio_decoder->writer->write_frame(frame);
+                av_frame_free(&frame);
+            }
             av_packet_unref(pkt);
         }
         catch (const QueueClosedException& e) {
             std::cout << "decode_audio exception: " << e.what() << std::endl;
-            ret = -1;
+            decoding = false;
         }
     }
     audio_decoder->flush();
@@ -107,8 +115,8 @@ int main(int argc, char** argv)
     CircularQueue<AVPacket*> video_pkt_q(10);
     CircularQueue<AVPacket*> audio_pkt_q(10);
 
-    Decoder video_decoder(reader.video_dec_ctx);
-    Decoder audio_decoder(reader.audio_dec_ctx);
+    Decoder video_decoder(reader.fmt_ctx, reader.video_stream_index);
+    Decoder audio_decoder(reader.fmt_ctx, reader.audio_stream_index);
 
     std::thread read_file(read, &reader, &video_pkt_q, &audio_pkt_q);
     std::thread get_video(decode_video, &video_decoder, &video_pkt_q);

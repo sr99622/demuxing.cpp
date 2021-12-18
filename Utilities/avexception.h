@@ -96,6 +96,11 @@ public:
     void ck(int ret);
     void ck(int ret, CmdTag cmd_tag);
     void ck(int ret, std::string msg);
+    void ck(void* arg, CmdTag cmd_tag = CmdTag::NONE);
+    void ck(void* arg, const std::string& msg);
+    void ck(const void* arg, CmdTag cmd_tag = CmdTag::NONE);
+    void ck(const void* arg, const std::string& msg);
+    /*
     void ck(AVFrame* arg, CmdTag cmd_tag = CmdTag::NONE);
     void ck(const AVCodec* arg, CmdTag cmd_tag = CmdTag::NONE);
     void ck(AVPacket* arg, CmdTag cmd_tag = CmdTag::NONE);
@@ -110,6 +115,7 @@ public:
     void ck(AVStream* arg, const std::string& msg);
     void ck(SwrContext* arg, const std::string& msg);
     void ck(SwsContext* arg, const std::string& msg);
+    */
 
     const AVException getNullException(CmdTag cmd_tag);
     const char* tag(CmdTag cmd_tag);

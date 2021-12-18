@@ -6,14 +6,13 @@
 class Decoder
 {
 public:
-	Decoder(AVCodecContext* dec);
+	Decoder(AVFormatContext* fmt_ctx, int stream_index);
 	~Decoder();
-	int decode_packet(AVPacket* pkt);
-	void flush();
+	AVFrame* decode_packet(AVPacket* pkt);
 	void adjust_pts(AVFrame* frame);
+	void flush();
 
 	AVCodecContext* dec_ctx;
-	AVFrame* frame;
 	RawFileWriter* writer = nullptr;
 	AVExceptionHandler av;
 
