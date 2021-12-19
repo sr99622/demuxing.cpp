@@ -2,18 +2,20 @@
 
 #include "../Utilities/avexception.h"
 #include "RawFileWriter.h"
+#include "CircularQueue.h"
 
 class Decoder
 {
 public:
-	Decoder(AVFormatContext* fmt_ctx, int stream_index);
+	Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<AVFrame*>* q);
 	~Decoder();
-	AVFrame* decode_packet(AVPacket* pkt);
+	int decode_packet(AVPacket* pkt);
 	void adjust_pts(AVFrame* frame);
 	void flush();
 
+	AVFrame* frame = NULL;
 	AVCodecContext* dec_ctx;
-	RawFileWriter* writer = nullptr;
+	CircularQueue<AVFrame*>* frame_q;
 	AVExceptionHandler av;
 
 	AVRational next_pts_tb;

@@ -61,49 +61,39 @@ void read(FileReader* reader, CircularQueue<AVPacket*>* video_pkt_q, CircularQue
     audio_pkt_q->flush();
 }
 
-void decode_video(Decoder* video_decoder, CircularQueue<AVPacket*>* video_pkt_q)
+void decode(Decoder* decoder, CircularQueue<AVPacket*>* pkt_q)
 {
-    bool decoding = true;
-    while (decoding) {
+    int ret = 0;
+    while (ret >= 0) {
         try {
-            AVPacket* pkt = video_pkt_q->pop();
-            AVFrame* frame = video_decoder->decode_packet(pkt);
-            if (frame) {
-                video_decoder->writer->write_frame(frame);
-                av_frame_free(&frame);
-            }
+            AVPacket* pkt = pkt_q->pop();
+            ret = decoder->decode_packet(pkt);
             av_packet_unref(pkt);
         }
         catch (const QueueClosedException& e) {
-            std::cout << "decode_video exception: " << e.what() << std::endl;
-            decoding = false;
+            std::cout << "decode exception: " << e.what() << std::endl;
+            ret = -1;
         }
     }
-    video_decoder->flush();
+    decoder->flush();
 }
 
-void decode_audio(Decoder* audio_decoder, CircularQueue<AVPacket*>* audio_pkt_q)
+void write(RawFileWriter* writer, CircularQueue<AVFrame*>* frame_q)
 {
-    bool decoding = true;
-    while (decoding) {
+    while (frame_q->isOpen()) {
         try {
-            AVPacket* pkt = audio_pkt_q->pop();
-            AVFrame* frame = audio_decoder->decode_packet(pkt);
+            AVFrame* frame = frame_q->pop();
             if (frame) {
-                audio_decoder->writer->write_frame(frame);
+                writer->write_frame(frame);
                 av_frame_free(&frame);
             }
-            av_packet_unref(pkt);
         }
         catch (const QueueClosedException& e) {
-            std::cout << "decode_audio exception: " << e.what() << std::endl;
-            decoding = false;
+            std::cout << "write exception: " << e.what() << std::endl;
+            break;
         }
     }
-    audio_decoder->flush();
 }
-
-
 
 int main(int argc, char** argv)
 {
@@ -112,21 +102,31 @@ int main(int argc, char** argv)
     src_filename = "../../data/test.mp4";
 
     FileReader reader(src_filename);
+    
     CircularQueue<AVPacket*> video_pkt_q(10);
     CircularQueue<AVPacket*> audio_pkt_q(10);
+    CircularQueue<AVFrame*> video_frame_q(10);
+    CircularQueue<AVFrame*> audio_frame_q(10);
 
-    Decoder video_decoder(reader.fmt_ctx, reader.video_stream_index);
-    Decoder audio_decoder(reader.fmt_ctx, reader.audio_stream_index);
+    Decoder video_decoder(reader.fmt_ctx, reader.video_stream_index, &video_frame_q);
+    Decoder audio_decoder(reader.fmt_ctx, reader.audio_stream_index, &audio_frame_q);
+
+    RawFileWriter video_writer(video_decoder.dec_ctx);
+    RawFileWriter audio_writer(audio_decoder.dec_ctx);
 
     std::thread read_file(read, &reader, &video_pkt_q, &audio_pkt_q);
-    std::thread get_video(decode_video, &video_decoder, &video_pkt_q);
-    std::thread get_audio(decode_audio, &audio_decoder, &audio_pkt_q);
+    std::thread decode_video(decode, &video_decoder, &video_pkt_q);
+    std::thread decode_audio(decode, &audio_decoder, &audio_pkt_q);
+    std::thread write_video(write, &video_writer, &video_frame_q);
+    std::thread write_audio(write, &audio_writer, &audio_frame_q);
 
     read_file.join();
-    get_video.join();
-    get_audio.join();
+    decode_video.join();
+    decode_audio.join();
+    write_video.join();
+    write_audio.join();
 
-    printf("Demuxing succeeded.\n");
+    std::cout << "Demuxing succeeded." << std::endl;
 
     return ret < 0;
 }

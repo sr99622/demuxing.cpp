@@ -73,6 +73,7 @@ enum class CmdTag {
     APA,
     ADC,
     AIA,
+    AFR,
     SA,
     SI,
     SC

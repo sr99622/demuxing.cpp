@@ -148,6 +148,7 @@
     <ClCompile Include="Decoder.cpp" />
     <ClCompile Include="demuxing.cpp" />
     <ClCompile Include="FileReader.cpp" />
+    <ClCompile Include="Frame.cpp" />
     <ClCompile Include="RawFileWriter.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -155,6 +156,7 @@
     <ClInclude Include="CircularQueue.h" />
     <ClInclude Include="Decoder.h" />
     <ClInclude Include="FileReader.h" />
+    <ClInclude Include="Frame.h" />
     <ClInclude Include="RawFileWriter.h" />
   </ItemGroup>
   <ItemGroup>
