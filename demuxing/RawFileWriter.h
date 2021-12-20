@@ -6,6 +6,7 @@ extern "C" {
 }
 
 #include "../Utilities/avexception.h"
+#include "Frame.h"
 
 class RawFileWriter
 {
@@ -14,6 +15,7 @@ public:
 	~RawFileWriter();
 
 	int write_frame(AVFrame* frame);
+	int write_frame(const Frame& f);
 	int output_video_frame(AVFrame* frame);
 	int output_audio_frame(AVFrame* frame);
 

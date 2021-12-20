@@ -3,11 +3,12 @@
 #include "../Utilities/avexception.h"
 #include "RawFileWriter.h"
 #include "CircularQueue.h"
+#include "Frame.h"
 
 class Decoder
 {
 public:
-	Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<AVFrame*>* q);
+	Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<Frame>* q);
 	~Decoder();
 	int decode_packet(AVPacket* pkt);
 	void adjust_pts(AVFrame* frame);
@@ -15,9 +16,9 @@ public:
 
 	AVFrame* frame = NULL;
 	AVCodecContext* dec_ctx;
-	CircularQueue<AVFrame*>* frame_q;
+	CircularQueue<Frame>* frame_q;
 	AVExceptionHandler av;
-
+	Frame tmp;
 	AVRational next_pts_tb;
 	int64_t next_pts;
 };

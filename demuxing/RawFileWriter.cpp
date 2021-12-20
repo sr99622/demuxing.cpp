@@ -11,7 +11,7 @@ RawFileWriter::RawFileWriter(AVCodecContext* codec_ctx)
 			av.ck(video_dst_bufsize = av_image_alloc(video_dst_data, video_dst_linesize, width, height, pix_fmt, 1), CmdTag::AIA);
 		}
 		catch (const AVException& e) {
-			std::cout << e.what() << std::endl;
+			std::cout << "RawFileWriter constructor exception: " << e.what() << std::endl;
 		}
 
         type = AVMEDIA_TYPE_VIDEO;
@@ -24,8 +24,8 @@ RawFileWriter::RawFileWriter(AVCodecContext* codec_ctx)
 
     file = fopen(filename, "wb");
     if (!file) {
-        throw "could not open raw output file";
-    }
+        std::cout << "Error opening file " << filename << std::endl;
+     }
 
 }
 
@@ -35,6 +35,10 @@ RawFileWriter::~RawFileWriter()
         fclose(file);
 
     av_free(video_dst_data[0]);
+}
+
+int RawFileWriter::write_frame(const Frame& f) {
+    return write_frame(f.av_frame);
 }
 
 int RawFileWriter::write_frame(AVFrame* frame)
@@ -51,21 +55,12 @@ int RawFileWriter::write_frame(AVFrame* frame)
 
 int RawFileWriter::output_video_frame(AVFrame* frame)
 {
-    if (frame->width != width || frame->height != height ||
-        frame->format != pix_fmt) {
-        fprintf(stderr, "Error: Width, height and pixel format have to be "
-            "constant in a rawvideo file, but the width, height or "
-            "pixel format of the input video changed:\n"
-            "old: width = %d, height = %d, format = %s\n"
-            "new: width = %d, height = %d, format = %s\n",
-            width, height, av_get_pix_fmt_name(pix_fmt),
-            frame->width, frame->height,
-            av_get_pix_fmt_name((AVPixelFormat)frame->format));
+    if (frame->width != width || frame->height != height || frame->format != pix_fmt) {
+        std::cout << "RawFileWriter output_video_frame error: inconsistent format" << std::endl;
         return -1;
     }
 
-    printf("video_frame n:%d coded_n:%d\n",
-        frame_count++, frame->coded_picture_number);
+    printf("video_frame n:%d coded_n:%d\n", frame_count++, frame->coded_picture_number);
 
     av_image_copy(video_dst_data, video_dst_linesize,
         (const uint8_t**)(frame->data), frame->linesize,

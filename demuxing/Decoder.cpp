@@ -1,6 +1,6 @@
 #include "Decoder.h"
 
-Decoder::Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<AVFrame*>* q)
+Decoder::Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<Frame>* q)
 {
     next_pts = 0;
     next_pts_tb = av_make_q(0, 1);
@@ -22,7 +22,7 @@ Decoder::Decoder(AVFormatContext* fmt_ctx, int stream_index, CircularQueue<AVFra
 
 Decoder::~Decoder()
 {
-    av_frame_free(&frame);
+    av_frame_unref(frame);
     avcodec_free_context(&dec_ctx);
 }
 
@@ -45,7 +45,7 @@ int Decoder::decode_packet(AVPacket* pkt)
                 adjust_pts(frame);
             }
 
-            AVFrame* tmp = av_frame_clone(frame);
+            tmp.av_frame = frame;
             frame_q->push(tmp);
         }
     }
