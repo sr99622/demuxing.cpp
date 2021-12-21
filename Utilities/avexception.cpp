@@ -123,10 +123,14 @@ const char* AVExceptionHandler::tag(CmdTag cmd_tag)
         return "av_frame_copy";
     case CmdTag::ABR:
         return "av_buffer_ref";
+    case CmdTag::AICTB:
+        return "av_image_copy_to_buffer";
     case CmdTag::AHFTBN:
         return "av_hwdevice_find_type_by_name";
     case CmdTag::AGHC:
         return "avcodec_get_hw_config";
+    case CmdTag::AHTD:
+        return "av_hwframe_transfer_data";
     case CmdTag::ANS:
         return "avformat_new_stream";
     case CmdTag::AFR:
@@ -143,6 +147,8 @@ const char* AVExceptionHandler::tag(CmdTag cmd_tag)
         return "av_dict_copy";
     case CmdTag::AIA:
         return "av_image_alloc";
+    case CmdTag::AM:
+        return "av_malloc";
     case CmdTag::SA:
         return "swr_alloc";
     case CmdTag::SI:

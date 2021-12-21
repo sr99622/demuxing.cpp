@@ -44,8 +44,6 @@ extern "C" {
 #include "Decoder.h"
 #include "CircularQueue.h"
 
-static const char* src_filename = NULL;
-
 void read(FileReader* reader, CircularQueue<AVPacket*>* video_pkt_q, CircularQueue<AVPacket*>* audio_pkt_q)
 {
     while (AVPacket* pkt = reader->read_packet()) {
@@ -71,13 +69,10 @@ void decode(Decoder* decoder, CircularQueue<AVPacket*>* pkt_q)
             av_packet_unref(pkt);
         }
         catch (const QueueClosedException& e) {
-            std::cout << "decode exception: " << e.what() << std::endl;
-            ret = -1;
+            break;
         }
     }
     decoder->flush();
-
-    std::cout << "decoder finish" << std::endl;
 }
 
 void write(RawFileWriter* writer, CircularQueue<Frame>* frame_q)
@@ -89,16 +84,38 @@ void write(RawFileWriter* writer, CircularQueue<Frame>* frame_q)
             writer->write_frame(frame);
         }
         catch (const QueueClosedException& e) {
-            std::cout << "write exception: " << e.what() << std::endl;
             break;
         }
     }
 }
 
+void show_hw_devices()
+{
+    AVHWDeviceType type = AV_HWDEVICE_TYPE_NONE;
+    while ((type = av_hwdevice_iterate_types(type)) != AV_HWDEVICE_TYPE_NONE)
+        std::cout << av_hwdevice_get_type_name(type) << std::endl;
+}
+
 int main(int argc, char** argv)
 {
-    src_filename = "../../data/test.mp4";
+    if (argc < 2) {
+        std::cout << "Usage: demuxing <filename> <hardware decoder name> (*optional)\n"
+            << "Available hardware decoders are listed below" << std::endl;
+        show_hw_devices();
+        return 0;
+    }
 
+    const char* hw_dec_name = "none";
+    if (argc == 3)
+        hw_dec_name = argv[2];
+
+    AVHWDeviceType type = av_hwdevice_find_type_by_name(hw_dec_name);
+    if (type != AV_HWDEVICE_TYPE_NONE)
+        std::cout << "hw decoder: " << av_hwdevice_get_type_name(type) << std::endl;
+    else
+        std::cout << "using cpu decoder" << std::endl;
+
+    const char* src_filename = argv[1];
     FileReader reader(src_filename);
     
     CircularQueue<AVPacket*> video_pkt_q(10);
@@ -106,7 +123,7 @@ int main(int argc, char** argv)
     CircularQueue<Frame> video_frame_q(10);
     CircularQueue<Frame> audio_frame_q(10);
 
-    Decoder video_decoder(reader.fmt_ctx, reader.video_stream_index, &video_frame_q);
+    Decoder video_decoder(reader.fmt_ctx, reader.video_stream_index, &video_frame_q, type);
     Decoder audio_decoder(reader.fmt_ctx, reader.audio_stream_index, &audio_frame_q);
 
     RawFileWriter video_writer(video_decoder.dec_ctx);

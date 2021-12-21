@@ -26,13 +26,15 @@ FileReader::~FileReader()
 
 AVPacket* FileReader::read_packet()
 {
+    int ret = 0;
     AVPacket* pkt = av_packet_alloc();
 
     try {
-        av.ck(av_read_frame(fmt_ctx, pkt), CmdTag::ARF);
+        av.ck(ret = av_read_frame(fmt_ctx, pkt), CmdTag::ARF);
     }
     catch (const AVException& e) {
-        std::cout << "FileReader::read_packet exception: " << e.what() << std::endl;
+        if (ret != AVERROR_EOF)
+            std::cout << "FileReader::read_packet exception: " << e.what() << std::endl;
         return NULL;
     }
     return pkt;

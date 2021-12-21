@@ -44,8 +44,10 @@ enum class CmdTag {
     AAC,
     AFC,
     ABR,
+    AICTB,
     AHFTBN,
     AGHC,
+    AHTD,
     ANS,
     AFCP,
     SGC,
@@ -54,6 +56,7 @@ enum class CmdTag {
     ADC,
     AIA,
     AFR,
+    AM,
     SA,
     SI,
     SC

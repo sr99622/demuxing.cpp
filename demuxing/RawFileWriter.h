@@ -14,8 +14,8 @@ public:
 	RawFileWriter(AVCodecContext* codec_ctx);
 	~RawFileWriter();
 
-	int write_frame(AVFrame* frame);
 	int write_frame(const Frame& f);
+	int write_frame(AVFrame* frame);
 	int output_video_frame(AVFrame* frame);
 	int output_audio_frame(AVFrame* frame);
 
@@ -24,9 +24,8 @@ public:
 	AVPixelFormat pix_fmt;
 	AVMediaType type;
 
-	uint8_t* video_dst_data[4] = { NULL };
-	int video_dst_linesize[4];
-	int video_dst_bufsize;
+	uint8_t* buffer = NULL;
+	int size;
 
 	const char* filename;
 	FILE* file;
